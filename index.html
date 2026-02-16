@@ -1,4 +1,4 @@
-
+<!DOCTYPE html>
 <html lang="es">
 <head>
     <meta charset="UTF-8">
@@ -32,7 +32,7 @@
                     <h1 class="text-lg font-bold text-slate-900 tracking-tight">Centro de Comando Búho</h1>
                     <div class="flex items-center gap-2">
                         <span id="sync-status" class="w-2 h-2 rounded-full bg-slate-300"></span>
-                        <p id="sync-text" class="text-[10px] text-slate-500 uppercase font-bold tracking-widest">Seguridad Activa</p>
+                        <p id="sync-text" class="text-[10px] text-slate-500 uppercase font-bold tracking-widest">Verificando...</p>
                     </div>
                 </div>
             </div>
@@ -54,7 +54,7 @@
                 <i class="fa-solid fa-shield-halved text-indigo-600"></i> Configuración
             </h2>
             <p class="text-sm text-slate-500 mb-6">
-                Pega el bloque de configuración JSON de Firebase para activar la sincronización en este dispositivo.
+                Pega el bloque de configuración JSON de Firebase para activar la sincronización.
             </p>
             <textarea id="config-input" class="w-full h-40 p-4 text-xs font-mono border border-slate-200 rounded-2xl mb-6 bg-slate-50 focus:ring-2 focus:ring-indigo-500 outline-none" placeholder='{ "apiKey": "...", "projectId": "...", ... }'></textarea>
             <button id="btn-save-config" class="w-full bg-indigo-600 text-white py-4 rounded-2xl font-bold text-lg hover:bg-indigo-700 shadow-lg transition-transform active:scale-95">
@@ -166,11 +166,15 @@
         }
 
         document.getElementById('btn-save-config').onclick = () => {
+            const input = document.getElementById('config-input').value.trim();
             try {
-                const config = JSON.parse(document.getElementById('config-input').value);
+                const config = JSON.parse(input);
+                if (!config.apiKey || !config.projectId) throw new Error("Configuración incompleta");
                 localStorage.setItem('fb_config_secure', JSON.stringify(config));
                 location.reload();
-            } catch (e) { alert("JSON Inválido. Asegúrate de copiar todo el bloque { }"); }
+            } catch (e) { 
+                alert("Error: Asegúrate de pegar el bloque JSON completo con las llaves { } y que sea válido."); 
+            }
         };
 
         document.getElementById('clear-config').onclick = () => {
@@ -187,14 +191,23 @@
                 db = getFirestore(app);
                 await signInAnonymously(auth);
                 onAuthStateChanged(auth, (user) => { if(user) startApp(); });
-            } catch (e) { updateStatus('error'); }
+            } catch (e) { 
+                console.error("Firebase Init Error:", e);
+                updateStatus('error'); 
+            }
         }
 
         function updateStatus(status) {
             const dot = document.getElementById('sync-status');
             const text = document.getElementById('sync-text');
-            if(status === 'error') { dot.className = "w-2 h-2 rounded-full bg-red-500"; text.innerText = "Error Cloud"; }
-            else { dot.className = "w-2 h-2 rounded-full bg-emerald-500 animate-pulse"; text.innerText = "Sincronizado"; }
+            if(status === 'error') { 
+                dot.className = "w-2 h-2 rounded-full bg-red-500 shadow-lg shadow-red-200"; 
+                text.innerText = "Error Cloud (Ver Consola)"; 
+            }
+            else { 
+                dot.className = "w-2 h-2 rounded-full bg-emerald-500 animate-pulse shadow-lg shadow-emerald-200"; 
+                text.innerText = "Sincronizado"; 
+            }
         }
 
         function startApp() {
@@ -204,6 +217,9 @@
                 if(!snap.exists()) setDoc(configDoc, { schedule: defaultData });
                 updateStatus('success');
                 render();
+            }, (err) => {
+                console.error("Firestore Sync Error:", err);
+                updateStatus('error');
             });
         }
 
@@ -244,7 +260,6 @@
             distChart = new Chart(document.getElementById('distChart'), { type: 'doughnut', data: { labels: ['Grado', 'OSARE'], datasets: [{ data: [totalA, totalW], backgroundColor: ['#4f46e5', '#d97706'], borderWidth: 0 }]}, options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { position: 'bottom', labels: { boxWidth: 8, font: { size: 9 } } } }, cutout: '80%' } });
         }
 
-        // Modo Editor
         document.getElementById('toggle-edit').onclick = () => {
             isEditMode = !isEditMode;
             document.getElementById('edit-panel').classList.toggle('hidden');
