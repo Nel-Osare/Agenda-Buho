@@ -16,6 +16,10 @@
         .inactive-tab { background-color: white; color: #64748b; }
         .timeline-highlight { border-left: 4px solid #4f46e5; background-color: #f5f3ff; }
         .edit-input { @apply w-full p-2 rounded-lg border border-indigo-100 text-sm focus:ring-2 focus:ring-indigo-500 outline-none; }
+        .error-log { color: #ef4444; font-weight: bold; }
+        
+        /* Modal de Configuración */
+        #config-modal { background: rgba(15, 23, 42, 0.8); backdrop-filter: blur(4px); }
     </style>
 </head>
 <body class="min-h-screen flex flex-col">
@@ -30,7 +34,7 @@
                     <h1 class="text-lg font-bold text-slate-900 tracking-tight">Centro de Comando Búho</h1>
                     <div class="flex items-center gap-2">
                         <span id="sync-status" class="w-2 h-2 rounded-full bg-slate-300"></span>
-                        <p id="sync-text" class="text-[10px] text-slate-500 uppercase font-bold tracking-widest">Sincronizando...</p>
+                        <p id="sync-text" class="text-[10px] text-slate-500 uppercase font-bold tracking-widest text-ellipsis">Seguridad Activa</p>
                     </div>
                 </div>
             </div>
@@ -40,21 +44,34 @@
         </div>
     </header>
 
+    <!-- Modal de Alerta de Configuración (Solo si falta la llave) -->
+    <div id="config-modal" class="fixed inset-0 z-[100] hidden flex items-center justify-center p-4">
+        <div class="bg-white rounded-2xl max-w-md w-full p-6 shadow-2xl">
+            <h2 class="text-xl font-bold text-slate-900 mb-4 flex items-center gap-2">
+                <i class="fa-solid fa-shield-halved text-amber-500"></i> Configuración Requerida
+            </h2>
+            <p class="text-sm text-slate-600 mb-6">
+                Para proteger tu cuenta, hemos eliminado la clave API del código fuente. Por favor, ingresa tu configuración de Firebase (el bloque JSON que copiaste de la consola).
+            </p>
+            <textarea id="config-input" class="w-full h-32 p-3 text-xs font-mono border rounded-lg mb-4" placeholder='{"apiKey": "AIza...", "projectId": "..."}'></textarea>
+            <button id="btn-save-config" class="w-full bg-indigo-600 text-white py-3 rounded-xl font-bold">Iniciar Conexión Segura</button>
+        </div>
+    </div>
+
     <main class="flex-grow max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-8">
         
-        <!-- Panel de Edición Dinámica Mejorado -->
+        <!-- Panel de Edición -->
         <section id="edit-panel" class="hidden bg-indigo-50 border-2 border-indigo-200 rounded-2xl p-6 space-y-6 shadow-inner">
             <div class="flex justify-between items-center">
                 <h2 class="text-indigo-900 font-bold flex items-center gap-2">
-                    <i class="fa-solid fa-sliders"></i> Ajustador de Tiempos & Agenda: <span id="editing-day-name">Lunes</span>
+                    <i class="fa-solid fa-sliders"></i> Ajustador Táctico: <span id="editing-day-name">Lunes</span>
                 </h2>
                 <button id="close-edit" class="text-indigo-400 hover:text-indigo-600"><i class="fa-solid fa-xmark"></i></button>
             </div>
             
             <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
-                <!-- Columna: Totales -->
                 <div class="space-y-4">
-                    <h3 class="text-xs font-bold text-indigo-400 uppercase tracking-widest">Metas del Día</h3>
+                    <h3 class="text-xs font-bold text-indigo-400 uppercase tracking-widest">Metas Diarias</h3>
                     <div class="space-y-3">
                         <div>
                             <label class="text-[10px] font-bold text-indigo-700 uppercase">Horas Grado (A)</label>
@@ -71,18 +88,15 @@
                     </div>
                 </div>
 
-                <!-- Columna: Editor de Timeline -->
                 <div class="md:col-span-2 space-y-4">
                     <h3 class="text-xs font-bold text-indigo-400 uppercase tracking-widest">Ajustar Actividades</h3>
-                    <div id="edit-timeline-container" class="space-y-2 max-h-[300px] overflow-y-auto pr-2 bg-white/50 p-3 rounded-xl border border-indigo-100">
-                        <!-- Items de edición inyectados por JS -->
-                    </div>
+                    <div id="edit-timeline-container" class="space-y-2 max-h-[300px] overflow-y-auto pr-2 bg-white/50 p-3 rounded-xl border border-indigo-100"></div>
                 </div>
             </div>
 
             <div class="flex justify-end pt-4 border-t border-indigo-100">
-                <button id="save-changes" class="bg-indigo-600 text-white px-8 py-3 rounded-xl font-bold hover:bg-indigo-700 shadow-lg shadow-indigo-200 flex items-center gap-2">
-                    <i class="fa-solid fa-floppy-disk"></i> Guardar Cambios en la Nube
+                <button id="save-changes" class="bg-indigo-600 text-white px-8 py-3 rounded-xl font-bold hover:bg-indigo-700 shadow-lg flex items-center gap-2">
+                    <i class="fa-solid fa-floppy-disk"></i> Guardar en la Nube
                 </button>
             </div>
         </section>
@@ -114,7 +128,7 @@
                             <div class="chart-container" style="height: 250px;"><canvas id="energyChart"></canvas></div>
                         </div>
                         <div>
-                            <h4 class="text-xs font-bold text-slate-400 uppercase mb-4 tracking-widest">Agenda de Ejecución</h4>
+                            <h4 class="text-xs font-bold text-slate-400 uppercase mb-4 tracking-widest">Agenda</h4>
                             <div id="timeline-list" class="space-y-2 max-h-[400px] overflow-y-auto pr-2 border-t border-slate-50 pt-4"></div>
                         </div>
                     </div>
@@ -129,27 +143,17 @@
         import { getFirestore, doc, getDoc, setDoc, onSnapshot } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
 
         // ==========================================
-        // CONFIGURACIÓN REEMPLAZADA POR EL USUARIO
+        // GESTIÓN SEGURA DE CONFIGURACIÓN (SIN LLAVES EXPLICITAS)
         // ==========================================
-        const configFromEnv = typeof __firebase_config !== 'undefined' ? JSON.parse(__firebase_config) : null;
-        
-        const firebaseConfig = configFromEnv || {
-            apiKey: "AIzaSyCmrOQvIYGcy1AtrAfl16lZRgR-Ei_SHtY",
-            authDomain: "agenda-buho.firebaseapp.com",
-            projectId: "agenda-buho",
-            storageBucket: "agenda-buho.firebasestorage.app",
-            messagingSenderId: "708794019951",
-            appId: "1:708794019951:web:e252a279376e9264199d9a",
-            measurementId: "G-DSEZ0LR39B"
+        const getStoredConfig = () => {
+            const local = localStorage.getItem('fb_config');
+            return local ? JSON.parse(local) : null;
         };
 
-        const currentAppId = typeof __app_id !== 'undefined' ? __app_id : 'mi-centro-comando-buho';
-        const initialToken = typeof __initial_auth_token !== 'undefined' ? __initial_auth_token : null;
+        let fbConfig = getStoredConfig();
+        const currentAppId = 'mi-centro-comando-buho-produccion';
 
-        const app = initializeApp(firebaseConfig);
-        const auth = getAuth(app);
-        const db = getFirestore(app);
-
+        let db, auth, app;
         let scheduleData = {};
         let currentDay = "Lunes";
         let energyChart = null;
@@ -161,171 +165,124 @@
             deep: { label: "Grado (A)", color: "bg-indigo-100 text-indigo-700 border-indigo-200", icon: "fa-brain" },
             uni: { label: "U", color: "bg-blue-100 text-blue-700 border-blue-200", icon: "fa-graduation-cap" },
             study: { label: "Repaso", color: "bg-cyan-100 text-cyan-700 border-cyan-200", icon: "fa-book-open" },
-            maintenance: { label: "Salud/Anclaje", color: "bg-emerald-100 text-emerald-700 border-emerald-200", icon: "fa-heart-pulse" },
+            maintenance: { label: "Salud", color: "bg-emerald-100 text-emerald-700 border-emerald-200", icon: "fa-heart-pulse" },
             sleep: { label: "Sueño", color: "bg-slate-100 text-slate-700 border-slate-200", icon: "fa-bed" },
-            other: { label: "Transición/Ocio", color: "bg-slate-50 text-slate-400 border-slate-200", icon: "fa-clock" },
+            other: { label: "Ocio", color: "bg-slate-50 text-slate-400 border-slate-200", icon: "fa-clock" },
             social: { label: "Discipulado", color: "bg-pink-100 text-pink-700 border-pink-200", icon: "fa-users" }
         };
 
         const defaultData = {
-            "Lunes": { totals: { work: 8, deep: 3.5, maintenance: 1.5, sleep: 7 }, focus: [10, 20, 40, 50, 50, 50, 40, 40, 40, 40, 30, 30, 40, 60, 80, 95, 95, 80], timeline: [{t:"06:00", a:"Meditación & Ejercicio", c:"maintenance"}, {t:"09:00", a:"Trabajo OSARE", c:"work"}, {t:"19:30", a:"DEEP WORK A (Teoría)", c:"deep", h:true}, {t:"23:00", a:"Sueño Estricto", c:"sleep"}] },
-            "Martes": { totals: { work: 7, uni: 3, study: 2, sleep: 7 }, focus: [10, 20, 40, 50, 60, 75, 70, 60, 40, 30, 20, 10], timeline: [{t:"06:00", a:"Anclaje Matutino", c:"maintenance"}, {t:"16:00", a:"Repaso Recall", c:"study", h:true}, {t:"18:00", a:"Universidad", c:"uni"}, {t:"23:00", a:"Sueño", c:"sleep"}] },
-            "Miércoles": { totals: { work: 7, uni: 3, study: 2, sleep: 7 }, focus: [10, 20, 40, 50, 60, 75, 70, 60, 40, 30, 20, 10], timeline: [{t:"16:00", a:"Repaso", c:"study", h:true}, {t:"18:00", a:"Universidad", c:"uni"}, {t:"23:00", a:"Sueño", c:"sleep"}] },
-            "Jueves": { totals: { work: 8, deep: 2, social: 1.5, sleep: 7 }, focus: [10, 20, 30, 40, 50, 80, 90, 70], timeline: [{t:"18:00", a:"Discipulado", c:"social"}, {t:"19:30", a:"Reset Dopaminérgico", c:"maintenance"}, {t:"21:00", a:"DEEP WORK A", c:"deep", h:true}, {t:"23:00", a:"Sueño", c:"sleep"}] },
-            "Viernes": { totals: { work: 7, uni: 3, study: 2, sleep: 7 }, focus: [10, 20, 40, 60, 75, 70, 40, 20], timeline: [{t:"16:00", a:"Repaso", c:"study", h:true}, {t:"18:00", a:"Universidad", c:"uni"}, {t:"23:00", a:"Sueño", c:"sleep"}] },
-            "Sábado": { totals: { deep: 6, study: 4, sleep: 7 }, focus: [20, 40, 60, 80, 95, 95, 50, 20], timeline: [{t:"09:00", a:"DEEP WORK A (AM)", c:"deep"}, {t:"13:00", a:"Asignaciones U", c:"study"}, {t:"18:00", a:"DEEP WORK A (Cierre)", c:"deep", h:true}, {t:"23:00", a:"Sueño", c:"sleep"}] }
+            "Lunes": { totals: { work: 8, deep: 3.5, maintenance: 1.5, sleep: 7 }, focus: [10, 20, 40, 50, 50, 50, 40, 40, 40, 40, 30, 30, 40, 60, 80, 95, 95, 80], timeline: [{t:"06:00", a:"Meditación", c:"maintenance"}, {t:"09:00", a:"Trabajo OSARE", c:"work"}, {t:"19:30", a:"DEEP WORK A", c:"deep", h:true}, {t:"23:00", a:"Sueño Estricto", c:"sleep"}] },
+            "Martes": { totals: { work: 7, uni: 3, study: 2, sleep: 7 }, focus: [10, 20, 40, 50, 60, 75, 70, 60, 40, 30, 20, 10], timeline: [{t:"06:00", a:"Anclaje Matutino", c:"maintenance"}, {t:"16:00", a:"Repaso Recall", c:"study", h:true}, {t:"18:00", a:"Universidad", c:"uni"}] },
+            "Sábado": { totals: { deep: 6, study: 4, sleep: 7 }, focus: [20, 40, 60, 80, 95, 95, 50, 20], timeline: [{t:"09:00", a:"DEEP WORK A (AM)", c:"deep"}, {t:"13:00", a:"Asignaciones U", c:"study"}, {t:"18:00", a:"DEEP WORK A (Cierre)", c:"deep", h:true}] }
         };
 
-        const startSync = (user) => {
-            if (!user) return;
+        const updateStatus = (type, text) => {
+            const statusDot = document.getElementById('sync-status');
+            const statusText = document.getElementById('sync-text');
+            statusText.innerText = text;
+            statusDot.className = `w-2 h-2 rounded-full ${type === 'error' ? 'bg-red-500' : type === 'success' ? 'bg-emerald-500' : 'bg-amber-500 animate-pulse'}`;
+        };
+
+        const startSync = async () => {
             const configDoc = doc(db, 'artifacts', currentAppId, 'public', 'data', 'userConfig', 'main');
             onSnapshot(configDoc, (snapshot) => {
-                if (snapshot.exists()) {
-                    scheduleData = snapshot.data().schedule;
-                } else {
-                    scheduleData = defaultData;
-                    setDoc(configDoc, { schedule: defaultData });
-                }
-                document.getElementById('sync-status').className = "w-2 h-2 rounded-full bg-emerald-500";
-                document.getElementById('sync-text').innerText = "Conectado a la Nube";
+                scheduleData = snapshot.exists() ? snapshot.data().schedule : defaultData;
+                if (!snapshot.exists()) setDoc(configDoc, { schedule: defaultData });
+                updateStatus('success', 'Conexión Segura');
                 renderApp();
-            }, (err) => {
-                console.error("Firestore error:", err);
-                document.getElementById('sync-status').className = "w-2 h-2 rounded-full bg-red-500 animate-pulse";
-                document.getElementById('sync-text').innerText = "Error de Permisos";
-            });
+            }, (err) => updateStatus('error', 'Error en Cloud'));
         };
 
         const renderApp = () => {
-            renderDayButtons();
-            renderCurrentDay();
-            renderGlobalChart();
-        };
-
-        const renderDayButtons = () => {
             const container = document.getElementById('day-buttons');
             container.innerHTML = '';
             Object.keys(scheduleData).forEach(day => {
-                const btn = document.createElement('button');
                 const active = day === currentDay;
-                btn.className = `w-full text-left px-4 py-3 rounded-xl text-sm font-bold transition-all flex justify-between items-center ${active ? 'active-tab shadow-lg shadow-indigo-100' : 'inactive-tab'}`;
+                const btn = document.createElement('button');
+                btn.className = `w-full text-left px-4 py-3 rounded-xl text-sm font-bold transition-all flex justify-between items-center ${active ? 'active-tab shadow-lg' : 'inactive-tab'}`;
                 btn.innerHTML = `${day} ${active ? '<i class="fa-solid fa-circle-check"></i>' : ''}`;
                 btn.onclick = () => { currentDay = day; renderApp(); if(isEditMode) openEditPanel(); };
                 container.appendChild(btn);
             });
-        };
 
-        const renderCurrentDay = () => {
             const data = scheduleData[currentDay];
-            if (!data) return;
             document.getElementById('display-day').innerText = currentDay;
-            
             const badgeContainer = document.getElementById('badges-row');
             badgeContainer.innerHTML = '';
             Object.entries(data.totals || {}).forEach(([cat, hrs]) => {
                 const meta = categoryMeta[cat] || categoryMeta.other;
                 badgeContainer.innerHTML += `<div class="stat-badge border ${meta.color}"><i class="fa-solid ${meta.icon}"></i><span>${hrs}h</span></div>`;
             });
-
             const tl = document.getElementById('timeline-list');
             tl.innerHTML = '';
-            (data.timeline || []).forEach(item => {
+            data.timeline.forEach(item => {
                 const meta = categoryMeta[item.c] || categoryMeta.other;
-                tl.innerHTML += `
-                    <div class="flex items-center gap-4 p-3 bg-white border border-slate-100 rounded-xl ${item.h ? 'timeline-highlight shadow-sm' : ''}">
-                        <span class="font-mono text-xs font-bold text-slate-400 w-12">${item.t}</span>
-                        <div class="w-1 h-6 rounded-full ${meta.color.split(' ')[0]}"></div>
-                        <div class="flex-grow">
-                            <span class="text-sm font-semibold text-slate-700 block">${item.a}</span>
-                            <span class="text-[10px] text-slate-400 uppercase font-bold tracking-tighter">${meta.label}</span>
-                        </div>
-                    </div>`;
+                tl.innerHTML += `<div class="flex items-center gap-4 p-3 bg-white border border-slate-100 rounded-xl ${item.h ? 'timeline-highlight' : ''}"><span class="font-mono text-xs font-bold text-slate-400 w-12">${item.t}</span><div class="w-1 h-6 rounded-full ${meta.color.split(' ')[0]}"></div><div class="flex-grow"><span class="text-sm font-semibold text-slate-700 block">${item.a}</span><span class="text-[10px] text-slate-400 uppercase font-bold tracking-tighter">${meta.label}</span></div></div>`;
             });
 
-            updateEnergyChart(data.focus);
-        };
-
-        const updateEnergyChart = (points) => {
-            if (!points) return;
-            const ctx = document.getElementById('energyChart').getContext('2d');
             if (energyChart) energyChart.destroy();
-            energyChart = new Chart(ctx, {
-                type: 'line',
-                data: {
-                    labels: points.map((_, i) => `${i + 6}:00`),
-                    datasets: [{
-                        label: 'Foco %', data: points, borderColor: '#4f46e5', backgroundColor: 'rgba(79, 70, 229, 0.1)', fill: true, tension: 0.4, pointRadius: 0
-                    }]
-                },
-                options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } },
-                    scales: { y: { beginAtZero: true, max: 100, ticks: { display: false }, grid: { display: false } }, x: { grid: { display: false }, ticks: { font: { size: 9 } } } }
-                }
-            });
-        };
+            const ctxE = document.getElementById('energyChart').getContext('2d');
+            energyChart = new Chart(ctxE, { type: 'line', data: { labels: data.focus.map((_, i) => `${i + 6}:00`), datasets: [{ label: 'Foco', data: data.focus, borderColor: '#4f46e5', backgroundColor: 'rgba(79, 70, 229, 0.1)', fill: true, tension: 0.4, pointRadius: 0 }] }, options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } }, scales: { y: { display: false }, x: { ticks: { font: { size: 9 } } } } } });
 
-        const renderGlobalChart = () => {
-            const ctx = document.getElementById('distChart').getContext('2d');
+            if (distChart) distChart.destroy();
+            const ctxD = document.getElementById('distChart').getContext('2d');
             let totalA = 0, totalW = 0, totalU = 0;
             Object.values(scheduleData).forEach(d => { totalA += (d.totals.deep || 0); totalW += (d.totals.work || 0); totalU += (d.totals.uni || 0); });
-            if (distChart) distChart.destroy();
-            distChart = new Chart(ctx, {
-                type: 'doughnut',
-                data: { labels: ['Grado', 'Trabajo', 'U'], datasets: [{ data: [totalA, totalW, totalU], backgroundColor: ['#4f46e5', '#d97706', '#2563eb'], borderWidth: 0 }] },
-                options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { position: 'bottom', labels: { boxWidth: 10, font: { size: 10 } } } }, cutout: '75%' }
-            });
+            distChart = new Chart(ctxD, { type: 'doughnut', data: { labels: ['Grado', 'OSARE', 'U'], datasets: [{ data: [totalA, totalW, totalU], backgroundColor: ['#4f46e5', '#d97706', '#2563eb'], borderWidth: 0 }] }, options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { position: 'bottom', labels: { boxWidth: 10, font: { size: 10 } } } }, cutout: '75%' } });
         };
 
         const openEditPanel = () => {
             document.getElementById('edit-panel').classList.remove('hidden');
-            document.getElementById('editing-day-name').innerText = currentDay;
             const data = scheduleData[currentDay];
-            document.getElementById('edit-deep').value = data.totals.deep || 0;
-            document.getElementById('edit-work').value = data.totals.work || 0;
-            document.getElementById('edit-uni').value = data.totals.uni || 0;
-
+            document.getElementById('edit-deep').value = data.totals.deep;
+            document.getElementById('edit-work').value = data.totals.work;
+            document.getElementById('edit-uni').value = data.totals.uni;
             const editTl = document.getElementById('edit-timeline-container');
             editTl.innerHTML = '';
             data.timeline.forEach((item, idx) => {
-                editTl.innerHTML += `
-                    <div class="flex gap-2 items-center bg-white p-2 rounded-lg border border-indigo-50">
-                        <span class="text-[10px] font-bold text-slate-400 w-10">${item.t}</span>
-                        <input type="text" value="${item.a}" data-idx="${idx}" class="edit-timeline-item flex-grow p-1 text-sm border-b border-transparent focus:border-indigo-300 outline-none">
-                    </div>`;
+                editTl.innerHTML += `<div class="flex gap-2 items-center bg-white p-2 rounded-lg border mb-1"><span class="text-[10px] font-bold text-slate-400 w-10">${item.t}</span><input type="text" value="${item.a}" data-idx="${idx}" class="edit-timeline-item flex-grow p-1 text-sm outline-none"></div>`;
             });
         };
 
         document.getElementById('toggle-edit').onclick = () => { isEditMode = !isEditMode; if(isEditMode) openEditPanel(); else document.getElementById('edit-panel').classList.add('hidden'); };
         document.getElementById('close-edit').onclick = () => { isEditMode = false; document.getElementById('edit-panel').classList.add('hidden'); };
-
         document.getElementById('save-changes').onclick = async () => {
             const data = scheduleData[currentDay];
             data.totals.deep = parseFloat(document.getElementById('edit-deep').value);
             data.totals.work = parseFloat(document.getElementById('edit-work').value);
             data.totals.uni = parseFloat(document.getElementById('edit-uni').value);
-
-            const timelineInputs = document.querySelectorAll('.edit-timeline-item');
-            timelineInputs.forEach(input => {
-                const idx = input.getAttribute('data-idx');
-                data.timeline[idx].a = input.value;
-            });
-
-            const configDoc = doc(db, 'artifacts', currentAppId, 'public', 'data', 'userConfig', 'main');
-            try {
-                await setDoc(configDoc, { schedule: scheduleData });
-                isEditMode = false;
-                document.getElementById('edit-panel').classList.add('hidden');
-            } catch (e) { alert("Error al guardar en Firestore"); }
+            document.querySelectorAll('.edit-timeline-item').forEach(input => { data.timeline[input.dataset.idx].a = input.value; });
+            try { 
+                await setDoc(doc(db, 'artifacts', currentAppId, 'public', 'data', 'userConfig', 'main'), { schedule: scheduleData });
+                isEditMode = false; document.getElementById('edit-panel').classList.add('hidden');
+            } catch (e) { alert("Error al guardar"); }
         };
 
-        const initApp = async () => {
+        const startApp = async (config) => {
             try {
-                if (initialToken) await signInWithCustomToken(auth, initialToken);
-                else await signInAnonymously(auth);
-                onAuthStateChanged(auth, (user) => { if (user) startSync(user); });
-            } catch (err) { console.error("Auth fail", err); }
+                app = initializeApp(config);
+                auth = getAuth(app);
+                db = getFirestore(app);
+                await signInAnonymously(auth);
+                onAuthStateChanged(auth, (user) => { if (user) startSync(); });
+            } catch (err) { updateStatus('error', 'Fallo Firebase'); }
         };
 
-        initApp();
+        if (!fbConfig) {
+            document.getElementById('config-modal').classList.remove('hidden');
+            document.getElementById('btn-save-config').onclick = () => {
+                const val = document.getElementById('config-input').value;
+                try {
+                    const parsed = JSON.parse(val);
+                    localStorage.setItem('fb_config', val);
+                    document.getElementById('config-modal').classList.add('hidden');
+                    startApp(parsed);
+                } catch (e) { alert("Formato inválido"); }
+            };
+        } else {
+            startApp(fbConfig);
+        }
     </script>
 </body>
 </html>
