@@ -9,19 +9,19 @@
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700&display=swap');
-        body { font-family: 'Inter', sans-serif; background-color: #f8fafc; color: #1e293b; }
-        .chart-container { position: relative; width: 100%; max-width: 600px; margin: auto; height: 300px; }
+        body { font-family: 'Inter', sans-serif; background-color: #f8fafc; color: #1e293b; overflow-x: hidden; }
+        .chart-container { position: relative; width: 100%; height: 260px; margin: auto; }
         .stat-badge { display: flex; align-items: center; gap: 0.5rem; padding: 0.5rem 0.75rem; border-radius: 0.75rem; font-size: 0.875rem; font-weight: 600; }
-        .active-tab { background-color: #4f46e5; color: white; }
+        .active-tab { background-color: #4f46e5; color: white; box-shadow: 0 10px 15px -3px rgba(79, 70, 229, 0.2); }
         .inactive-tab { background-color: white; color: #64748b; border: 1px solid #e2e8f0; }
         .timeline-highlight { border-left: 4px solid #4f46e5; background-color: #f5f3ff; }
-        .edit-input { @apply w-full p-2 rounded-lg border border-indigo-100 text-sm focus:ring-2 focus:ring-indigo-500 outline-none; }
+        .edit-input { @apply w-full p-3 rounded-xl border border-indigo-100 text-sm focus:ring-2 focus:ring-indigo-500 outline-none bg-white; }
         #config-modal { background: rgba(15, 23, 42, 0.95); backdrop-filter: blur(12px); }
         
-        /* Personalización de scrollbar */
-        ::-webkit-scrollbar { width: 6px; }
+        /* Custom Scrollbar */
+        ::-webkit-scrollbar { width: 5px; height: 5px; }
         ::-webkit-scrollbar-track { background: transparent; }
-        ::-webkit-scrollbar-thumb { background: #e2e8f0; border-radius: 10px; }
+        ::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 10px; }
     </style>
 </head>
 <body class="min-h-screen flex flex-col">
@@ -34,18 +34,18 @@
                     <i class="fa-solid fa-bolt-lightning"></i>
                 </div>
                 <div>
-                    <h1 class="text-lg font-bold text-slate-900 tracking-tight">Centro de Comando Búho</h1>
+                    <h1 class="text-sm md:text-lg font-bold text-slate-900 tracking-tight leading-none mb-1">Centro de Comando Búho</h1>
                     <div class="flex items-center gap-2">
                         <span id="sync-status" class="w-2 h-2 rounded-full bg-slate-300"></span>
-                        <p id="sync-text" class="text-[10px] text-slate-500 uppercase font-bold tracking-widest">Iniciando...</p>
+                        <p id="sync-text" class="text-[9px] md:text-[10px] text-slate-500 uppercase font-bold tracking-widest">Iniciando...</p>
                     </div>
                 </div>
             </div>
             <div class="flex gap-2">
-                <button id="toggle-edit" class="bg-slate-900 text-white px-4 py-2 rounded-lg text-sm font-bold hover:bg-indigo-700 transition-colors flex items-center gap-2">
-                    <i class="fa-solid fa-pen-to-square"></i> <span class="hidden sm:inline">Modo Editor</span>
+                <button id="toggle-edit" class="bg-slate-900 text-white p-2 md:px-4 md:py-2 rounded-lg text-sm font-bold hover:bg-indigo-700 transition-colors flex items-center gap-2">
+                    <i class="fa-solid fa-pen-to-square"></i> <span class="hidden md:inline">Editor</span>
                 </button>
-                <button id="clear-config" class="bg-slate-100 text-slate-400 px-3 py-2 rounded-lg text-sm hover:bg-red-50 hover:text-red-500 transition-all" title="Reconfigurar">
+                <button id="clear-config" class="bg-slate-100 text-slate-400 p-2 md:px-3 rounded-lg text-sm hover:bg-red-50 hover:text-red-500 transition-all" title="Reconfigurar">
                     <i class="fa-solid fa-key"></i>
                 </button>
             </div>
@@ -53,8 +53,8 @@
     </header>
 
     <!-- MODAL DE CONFIGURACIÓN SEGURA -->
-    <div id="config-modal" class="fixed inset-0 z-[100] hidden flex items-center justify-center p-4">
-        <div class="bg-white rounded-3xl max-w-md w-full p-8 shadow-2xl">
+    <div id="config-modal" class="fixed inset-0 z-[100] hidden items-center justify-center p-4">
+        <div class="bg-white rounded-3xl max-w-md w-full p-6 md:p-8 shadow-2xl">
             <div class="w-16 h-16 bg-indigo-50 text-indigo-600 rounded-2xl flex items-center justify-center text-2xl mb-6">
                 <i class="fa-solid fa-shield-halved"></i>
             </div>
@@ -70,13 +70,13 @@
     </div>
 
     <!-- PANTALLA DE ERROR DETALLADA -->
-    <div id="error-screen" class="hidden flex-grow flex items-center justify-center p-8 bg-red-50">
+    <div id="error-screen" class="hidden flex-grow flex items-center justify-center p-6 bg-red-50">
         <div class="text-center max-w-md">
             <div class="w-20 h-20 bg-red-100 text-red-600 rounded-full flex items-center justify-center text-3xl mx-auto mb-6">
                 <i class="fa-solid fa-triangle-exclamation"></i>
             </div>
             <h2 class="text-2xl font-bold text-red-900 mb-2 tracking-tight">Error de Conexión</h2>
-            <p id="error-detail" class="text-red-700 mb-8 font-mono text-sm bg-red-100 p-4 rounded-xl border border-red-200"></p>
+            <p id="error-detail" class="text-red-700 mb-8 font-mono text-xs bg-red-100 p-4 rounded-xl border border-red-200 break-words"></p>
             <div class="flex flex-col gap-3">
                 <button onclick="location.reload()" class="bg-red-600 text-white px-8 py-3 rounded-xl font-bold shadow-lg hover:bg-red-700 transition-colors">Reintentar</button>
                 <button id="force-reset" class="text-slate-500 text-sm font-semibold hover:text-indigo-600 transition-colors">
@@ -87,7 +87,7 @@
     </div>
 
     <!-- CONTENIDO PRINCIPAL -->
-    <main id="app-content" class="flex-grow max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-8 hidden">
+    <main id="app-content" class="flex-grow max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 md:py-8 space-y-6 md:space-y-8 hidden">
         
         <!-- PANEL DE EDICIÓN -->
         <section id="edit-panel" class="hidden bg-indigo-50 border-2 border-indigo-200 rounded-3xl p-6 md:p-8 space-y-6 shadow-inner">
@@ -97,16 +97,18 @@
                 </h2>
                 <button id="close-edit" class="text-indigo-400 hover:text-indigo-600"><i class="fa-solid fa-xmark text-xl"></i></button>
             </div>
-            <div class="grid grid-cols-1 md:grid-cols-3 gap-8">
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-6 md:gap-8">
                 <div class="space-y-4">
                     <h3 class="text-xs font-bold text-indigo-400 uppercase tracking-widest">Metas Diarias</h3>
-                    <div>
-                        <label class="text-[10px] font-bold text-indigo-700 uppercase">Horas Grado (A)</label>
-                        <input type="number" id="edit-deep" step="0.5" class="edit-input" value="0">
-                    </div>
-                    <div>
-                        <label class="text-[10px] font-bold text-indigo-700 uppercase">Horas Trabajo (OSARE)</label>
-                        <input type="number" id="edit-work" step="0.5" class="edit-input" value="0">
+                    <div class="grid grid-cols-2 md:grid-cols-1 gap-4">
+                        <div>
+                            <label class="text-[10px] font-bold text-indigo-700 uppercase">Horas Grado (A)</label>
+                            <input type="number" id="edit-deep" step="0.5" class="edit-input" value="0">
+                        </div>
+                        <div>
+                            <label class="text-[10px] font-bold text-indigo-700 uppercase">Horas Trabajo (OSARE)</label>
+                            <input type="number" id="edit-work" step="0.5" class="edit-input" value="0">
+                        </div>
                     </div>
                 </div>
                 <div class="md:col-span-2 space-y-4">
@@ -115,19 +117,19 @@
                 </div>
             </div>
             <div class="flex justify-end pt-4 border-t border-indigo-100">
-                <button id="save-changes" class="bg-indigo-600 text-white px-10 py-4 rounded-2xl font-bold hover:bg-indigo-700 shadow-lg shadow-indigo-100 flex items-center gap-2 transition-all active:scale-95">
+                <button id="save-changes" class="w-full md:w-auto bg-indigo-600 text-white px-10 py-4 rounded-2xl font-bold hover:bg-indigo-700 shadow-lg shadow-indigo-100 flex items-center justify-center gap-2 transition-all active:scale-95">
                     <i class="fa-solid fa-cloud-arrow-up"></i> Sincronizar Cambios
                 </button>
             </div>
         </section>
 
         <!-- DASHBOARD -->
-        <div class="grid grid-cols-1 lg:grid-cols-4 gap-8">
+        <div class="grid grid-cols-1 lg:grid-cols-4 gap-6 md:gap-8">
             <!-- Sidebar -->
             <div class="lg:col-span-1 space-y-6">
                 <div class="bg-white rounded-2xl shadow-sm border border-slate-200 p-4">
                     <h3 class="font-bold text-slate-700 mb-4 px-2 text-[10px] uppercase tracking-[0.2em]">Jornadas</h3>
-                    <div id="day-buttons" class="space-y-1.5"></div>
+                    <div id="day-buttons" class="grid grid-cols-3 md:grid-cols-1 gap-2"></div>
                 </div>
                 <div class="bg-white rounded-2xl shadow-sm border border-slate-200 p-6 text-center">
                     <h3 class="font-bold text-slate-700 mb-6 text-[10px] uppercase tracking-[0.2em]">Balance Semanal</h3>
@@ -138,20 +140,20 @@
             <!-- Main View -->
             <div class="lg:col-span-3 space-y-6">
                 <div class="bg-white rounded-3xl shadow-sm border border-slate-200 p-6 md:p-10">
-                    <div class="flex flex-col md:flex-row md:items-center justify-between gap-6 mb-10">
-                        <h3 class="text-3xl font-bold text-slate-800 tracking-tight flex items-center gap-3">
+                    <div class="flex flex-col md:flex-row md:items-center justify-between gap-6 mb-8 md:mb-10">
+                        <h3 class="text-2xl md:text-3xl font-bold text-slate-800 tracking-tight flex items-center gap-3">
                             <span id="display-day" class="border-b-4 border-indigo-500 pb-1">Lunes</span>
                         </h3>
                         <div id="badges-row" class="flex flex-wrap gap-2"></div>
                     </div>
                     
-                    <div class="grid grid-cols-1 xl:grid-cols-2 gap-16">
+                    <div class="grid grid-cols-1 xl:grid-cols-2 gap-10 md:gap-16">
                         <div>
-                            <h4 class="text-[10px] font-bold text-slate-400 uppercase mb-8 tracking-[0.2em]">Curva de Foco</h4>
-                            <div class="chart-container" style="height: 260px;"><canvas id="energyChart"></canvas></div>
+                            <h4 class="text-[10px] font-bold text-slate-400 uppercase mb-6 md:mb-8 tracking-[0.2em]">Curva de Foco</h4>
+                            <div class="chart-container"><canvas id="energyChart"></canvas></div>
                         </div>
                         <div>
-                            <h4 class="text-[10px] font-bold text-slate-400 uppercase mb-8 tracking-[0.2em]">Bloques de Ejecución</h4>
+                            <h4 class="text-[10px] font-bold text-slate-400 uppercase mb-6 md:mb-8 tracking-[0.2em]">Bloques de Ejecución</h4>
                             <div id="timeline-list" class="space-y-4 max-h-[450px] overflow-y-auto pr-2"></div>
                         </div>
                     </div>
@@ -165,7 +167,7 @@
         import { getAuth, signInAnonymously, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
         import { getFirestore, doc, onSnapshot, setDoc } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
 
-        const appId = 'agenda-buho-nel-v2';
+        const appId = 'agenda-buho-nel-v3';
         let db, auth, app, scheduleData = {}, currentDay = "Lunes", energyChart, distChart, isEditMode = false;
 
         const categoryMeta = {
@@ -181,21 +183,18 @@
             "Sábado": { totals: { deep: 6, work: 0 }, focus: [30, 60, 90, 95, 95, 70], timeline: [{t:"09:00", a:"DEEP WORK A (Mañana)", c:"deep"}, {t:"18:00", a:"DEEP WORK A (Cierre)", c:"deep", h:true}] }
         };
 
-        // Función para resetear todo
+        // UI Helpers
         const resetEverything = () => {
-            localStorage.removeItem('fb_config_secure');
-            location.reload();
-        };
-
-        document.getElementById('clear-config').onclick = () => {
-            if(confirm("¿Quieres eliminar la vinculación en este equipo?")) {
-                resetEverything();
+            if(confirm("Se borrarán los datos vinculados en este equipo. ¿Continuar?")) {
+                localStorage.removeItem('fb_config_secure');
+                location.reload();
             }
         };
 
+        document.getElementById('clear-config').onclick = resetEverything;
         document.getElementById('force-reset').onclick = resetEverything;
 
-        // 1. Verificar Configuración
+        // 1. Boot Logic
         const savedConfig = localStorage.getItem('fb_config_secure');
         if (!savedConfig) {
             const modal = document.getElementById('config-modal');
@@ -205,17 +204,18 @@
             initFirebase(JSON.parse(savedConfig));
         }
 
-        // 2. Guardar Configuración
+        // 2. Save Config Logic
         document.getElementById('btn-save-config').onclick = () => {
             const val = document.getElementById('config-input').value.trim();
             try {
-                JSON.parse(val); 
+                const parsed = JSON.parse(val);
+                if (!parsed.apiKey || !parsed.projectId) throw new Error("JSON incompleto");
                 localStorage.setItem('fb_config_secure', val);
                 location.reload();
-            } catch (e) { alert("Error: Formato JSON inválido. Asegúrate de copiar las llaves { }."); }
+            } catch (e) { alert("Error: El bloque JSON es inválido o faltan campos."); }
         };
 
-        // 3. Inicializar Firebase
+        // 3. Firebase Initialization
         async function initFirebase(config) {
             try {
                 app = initializeApp(config);
@@ -225,7 +225,12 @@
                 updateStatus('pending', 'Autenticando...');
                 
                 await signInAnonymously(auth);
-                onAuthStateChanged(auth, (user) => { if(user) startSync(); });
+                onAuthStateChanged(auth, (user) => { 
+                    if(user) {
+                        console.log("Sesión activa:", user.uid);
+                        startSync(); 
+                    }
+                });
 
             } catch (e) { showError(e.code || e.message); }
         }
@@ -235,10 +240,11 @@
             document.getElementById('config-modal').classList.add('hidden');
             document.getElementById('error-screen').classList.remove('hidden');
             let detail = "Error de conexión con la nube.";
-            if(msg.includes("auth/invalid-api-key")) detail = "La LLAVE (API Key) es incorrecta o no ha sido activada en Google Cloud.";
-            if(msg.includes("auth/operation-not-allowed")) detail = "Debes habilitar 'Ingreso Anónimo' en la consola de Firebase.";
-            if(msg.includes("permission-denied")) detail = "Permisos de Firestore denegados. Revisa tus reglas de seguridad.";
-            document.getElementById('error-detail').innerText = detail + " (" + msg + ")";
+            if(msg.includes("auth/invalid-api-key")) detail = "La LLAVE (API Key) es incorrecta o no ha sido activada aún en Google Cloud.";
+            if(msg.includes("auth/operation-not-allowed")) detail = "Debes habilitar 'Ingreso Anónimo' en Firebase > Build > Authentication.";
+            if(msg.includes("permission-denied")) detail = "Firestore rechaza la conexión. Revisa las reglas de seguridad.";
+            document.getElementById('error-detail').innerText = detail + " [" + msg + "]";
+            updateStatus('error', 'Fallo Crítico');
         }
 
         function updateStatus(status, label) {
@@ -248,6 +254,9 @@
                 dot.className = "w-2 h-2 rounded-full bg-emerald-500 animate-pulse shadow-lg shadow-emerald-200";
                 text.innerText = "Sincronizado";
                 document.getElementById('app-content').classList.remove('hidden');
+            } else if (status === 'error') {
+                dot.className = "w-2 h-2 rounded-full bg-red-500";
+                text.innerText = label;
             } else {
                 dot.className = "w-2 h-2 rounded-full bg-amber-500 animate-bounce";
                 text.innerText = label;
@@ -268,17 +277,19 @@
             const data = scheduleData[currentDay] || { totals: {}, focus: [], timeline: [] };
             document.getElementById('display-day').innerText = currentDay;
             
+            // Render Day Buttons
             const btnCont = document.getElementById('day-buttons');
             btnCont.innerHTML = '';
             Object.keys(scheduleData).forEach(day => {
                 const active = day === currentDay;
                 const btn = document.createElement('button');
-                btn.className = `w-full text-left px-5 py-4 rounded-2xl text-sm font-bold transition-all ${active ? 'active-tab shadow-xl scale-[1.02]' : 'inactive-tab hover:bg-slate-50'}`;
+                btn.className = `w-full text-center md:text-left px-3 py-3 md:px-5 md:py-4 rounded-xl md:rounded-2xl text-xs md:text-sm font-bold transition-all ${active ? 'active-tab scale-[1.02]' : 'inactive-tab hover:bg-slate-50'}`;
                 btn.innerText = day;
                 btn.onclick = () => { currentDay = day; render(); if(isEditMode) openEdit(); };
                 btnCont.appendChild(btn);
             });
 
+            // Badges
             const bRow = document.getElementById('badges-row');
             bRow.innerHTML = '';
             Object.entries(data.totals || {}).forEach(([cat, hrs]) => {
@@ -286,56 +297,36 @@
                 bRow.innerHTML += `<div class="stat-badge border ${m.color}"><i class="fa-solid ${m.icon} opacity-50 text-[10px]"></i><span>${hrs}h</span></div>`;
             });
 
+            // Timeline
             const tlList = document.getElementById('timeline-list');
             tlList.innerHTML = '';
             data.timeline.forEach(item => {
                 const m = categoryMeta[item.c] || categoryMeta.other;
-                tlList.innerHTML += `<div class="flex items-start gap-5 p-5 bg-white border border-slate-100 rounded-2xl ${item.h ? 'timeline-highlight shadow-sm' : ''}"><span class="font-mono text-[10px] font-black text-slate-300 mt-1 w-10">${item.t}</span><div class="flex-grow"><div class="text-sm font-bold text-slate-800">${item.a}</div><div class="text-[9px] uppercase font-black text-slate-400 tracking-widest">${m.label}</div></div></div>`;
+                tlList.innerHTML += `<div class="flex items-start gap-5 p-4 md:p-5 bg-white border border-slate-100 rounded-2xl ${item.h ? 'timeline-highlight shadow-sm' : ''}"><span class="font-mono text-[10px] font-black text-slate-300 mt-1 w-10">${item.t}</span><div class="flex-grow"><div class="text-sm font-bold text-slate-800">${item.a}</div><div class="text-[9px] uppercase font-black text-slate-400 tracking-widest">${m.label}</div></div></div>`;
             });
 
+            // Charts
             if(energyChart) energyChart.destroy();
-            const ctxE = document.getElementById('energyChart').getContext('2d');
-            energyChart = new Chart(ctxE, { 
+            energyChart = new Chart(document.getElementById('energyChart'), { 
                 type: 'line', 
                 data: { 
                     labels: data.focus.map((_,i)=>`${i+6}:00`), 
-                    datasets: [{ 
-                        data: data.focus, 
-                        borderColor: '#4f46e5', 
-                        borderWidth: 3, 
-                        tension: 0.4, 
-                        fill: true, 
-                        backgroundColor: 'rgba(79, 70, 229, 0.04)', 
-                        pointRadius: 0 
-                    }]
+                    datasets: [{ data: data.focus, borderColor: '#4f46e5', borderWidth: 3, tension: 0.4, fill: true, backgroundColor: 'rgba(79, 70, 229, 0.04)', pointRadius: 0 }]
                 }, 
-                options: { 
-                    responsive: true, 
-                    maintainAspectRatio: false, 
-                    plugins: { legend: { display: false } }, 
-                    scales: { y: { display: false }, x: { grid: { display: false }, ticks: { font: { size: 9, weight: 'bold' }, color: '#94a3b8' } } } 
-                } 
+                options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } }, scales: { y: { display: false }, x: { grid: { display: false }, ticks: { font: { size: 9, weight: 'bold' }, color: '#94a3b8' } } } } 
             });
 
             if(distChart) distChart.destroy();
-            const ctxD = document.getElementById('distChart').getContext('2d');
             let totalA = 0, totalW = 0;
             Object.values(scheduleData).forEach(d => { totalA += (d.totals.deep || 0); totalW += (d.totals.work || 0); });
-            distChart = new Chart(ctxD, { 
+            distChart = new Chart(document.getElementById('distChart'), { 
                 type: 'doughnut', 
-                data: { 
-                    labels: ['Grado', 'OSARE'], 
-                    datasets: [{ data: [totalA, totalW], backgroundColor: ['#4f46e5', '#f59e0b'], borderWidth: 0 }]
-                }, 
-                options: { 
-                    responsive: true, 
-                    maintainAspectRatio: false, 
-                    plugins: { legend: { position: 'bottom', labels: { boxWidth: 8, font: { size: 9, weight: 'bold' } } } }, 
-                    cutout: '85%' 
-                } 
+                data: { labels: ['Grado', 'OSARE'], datasets: [{ data: [totalA, totalW], backgroundColor: ['#4f46e5', '#f59e0b'], borderWidth: 0 }]}, 
+                options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { position: 'bottom', labels: { boxWidth: 8, font: { size: 9, weight: 'bold' } } } }, cutout: '85%' } 
             });
         }
 
+        // Edit Logic
         function openEdit() {
             const d = scheduleData[currentDay];
             document.getElementById('editing-day-name').innerText = currentDay;
@@ -344,7 +335,7 @@
             const tlE = document.getElementById('edit-timeline-container');
             tlE.innerHTML = '';
             d.timeline.forEach((it, i) => {
-                tlE.innerHTML += `<div class="flex gap-2 mb-3 items-center bg-white p-2 rounded-xl border border-indigo-50"><span class="text-[10px] font-bold text-slate-300 w-10 text-center">${it.t}</span><input type="text" value="${it.a}" data-idx="${i}" class="tl-edit-input w-full p-3 border-none outline-none text-xs text-slate-700 font-semibold"></div>`;
+                tlE.innerHTML += `<div class="flex gap-2 mb-3 items-center bg-white p-2 rounded-xl border border-indigo-50"><span class="text-[10px] font-bold text-slate-300 w-10 text-center">${it.t}</span><input type="text" value="${it.a}" data-idx="${i}" class="tl-edit-input w-full p-2 border-none outline-none text-xs text-slate-700 font-semibold"></div>`;
             });
         }
 
@@ -359,7 +350,6 @@
             d.totals.deep = parseFloat(document.getElementById('edit-deep').value);
             d.totals.work = parseFloat(document.getElementById('edit-work').value);
             document.querySelectorAll('.tl-edit-input').forEach(inp => { d.timeline[inp.dataset.idx].a = inp.value; });
-            
             try {
                 updateStatus('pending', 'Guardando...');
                 await setDoc(doc(db, 'artifacts', appId, 'public', 'data', 'userConfig', 'main'), { schedule: scheduleData });
