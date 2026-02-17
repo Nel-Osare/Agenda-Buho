@@ -77,7 +77,12 @@
             </div>
             <h2 class="text-2xl font-bold text-red-900 mb-2 tracking-tight">Error de Conexión</h2>
             <p id="error-detail" class="text-red-700 mb-8 font-mono text-sm bg-red-100 p-4 rounded-xl border border-red-200"></p>
-            <button onclick="location.reload()" class="bg-red-600 text-white px-8 py-3 rounded-xl font-bold shadow-lg hover:bg-red-700 transition-colors">Reintentar</button>
+            <div class="flex flex-col gap-3">
+                <button onclick="location.reload()" class="bg-red-600 text-white px-8 py-3 rounded-xl font-bold shadow-lg hover:bg-red-700 transition-colors">Reintentar</button>
+                <button id="force-reset" class="text-slate-500 text-sm font-semibold hover:text-indigo-600 transition-colors">
+                    Borrar configuración y volver a intentar
+                </button>
+            </div>
         </div>
     </div>
 
@@ -176,10 +181,26 @@
             "Sábado": { totals: { deep: 6, work: 0 }, focus: [30, 60, 90, 95, 95, 70], timeline: [{t:"09:00", a:"DEEP WORK A (Mañana)", c:"deep"}, {t:"18:00", a:"DEEP WORK A (Cierre)", c:"deep", h:true}] }
         };
 
+        // Función para resetear todo
+        const resetEverything = () => {
+            localStorage.removeItem('fb_config_secure');
+            location.reload();
+        };
+
+        document.getElementById('clear-config').onclick = () => {
+            if(confirm("¿Quieres eliminar la vinculación en este equipo?")) {
+                resetEverything();
+            }
+        };
+
+        document.getElementById('force-reset').onclick = resetEverything;
+
         // 1. Verificar Configuración
         const savedConfig = localStorage.getItem('fb_config_secure');
         if (!savedConfig) {
-            document.getElementById('config-modal').classList.remove('hidden');
+            const modal = document.getElementById('config-modal');
+            modal.classList.remove('hidden');
+            modal.classList.add('flex');
         } else {
             initFirebase(JSON.parse(savedConfig));
         }
@@ -191,7 +212,7 @@
                 JSON.parse(val); 
                 localStorage.setItem('fb_config_secure', val);
                 location.reload();
-            } catch (e) { alert("Error: Formato JSON inválido."); }
+            } catch (e) { alert("Error: Formato JSON inválido. Asegúrate de copiar las llaves { }."); }
         };
 
         // 3. Inicializar Firebase
@@ -211,6 +232,7 @@
 
         function showError(msg) {
             document.getElementById('app-content').classList.add('hidden');
+            document.getElementById('config-modal').classList.add('hidden');
             document.getElementById('error-screen').classList.remove('hidden');
             let detail = "Error de conexión con la nube.";
             if(msg.includes("auth/invalid-api-key")) detail = "La LLAVE (API Key) es incorrecta o no ha sido activada en Google Cloud.";
@@ -242,12 +264,10 @@
             }, (err) => showError(err.code));
         }
 
-        // Renderizado Completo
         function render() {
             const data = scheduleData[currentDay] || { totals: {}, focus: [], timeline: [] };
             document.getElementById('display-day').innerText = currentDay;
             
-            // Botones de Días
             const btnCont = document.getElementById('day-buttons');
             btnCont.innerHTML = '';
             Object.keys(scheduleData).forEach(day => {
@@ -259,7 +279,6 @@
                 btnCont.appendChild(btn);
             });
 
-            // Badges de Horas
             const bRow = document.getElementById('badges-row');
             bRow.innerHTML = '';
             Object.entries(data.totals || {}).forEach(([cat, hrs]) => {
@@ -267,7 +286,6 @@
                 bRow.innerHTML += `<div class="stat-badge border ${m.color}"><i class="fa-solid ${m.icon} opacity-50 text-[10px]"></i><span>${hrs}h</span></div>`;
             });
 
-            // Cronograma
             const tlList = document.getElementById('timeline-list');
             tlList.innerHTML = '';
             data.timeline.forEach(item => {
@@ -275,7 +293,6 @@
                 tlList.innerHTML += `<div class="flex items-start gap-5 p-5 bg-white border border-slate-100 rounded-2xl ${item.h ? 'timeline-highlight shadow-sm' : ''}"><span class="font-mono text-[10px] font-black text-slate-300 mt-1 w-10">${item.t}</span><div class="flex-grow"><div class="text-sm font-bold text-slate-800">${item.a}</div><div class="text-[9px] uppercase font-black text-slate-400 tracking-widest">${m.label}</div></div></div>`;
             });
 
-            // Gráfico de Energía
             if(energyChart) energyChart.destroy();
             const ctxE = document.getElementById('energyChart').getContext('2d');
             energyChart = new Chart(ctxE, { 
@@ -300,7 +317,6 @@
                 } 
             });
 
-            // Gráfico de Distribución
             if(distChart) distChart.destroy();
             const ctxD = document.getElementById('distChart').getContext('2d');
             let totalA = 0, totalW = 0;
@@ -320,7 +336,6 @@
             });
         }
 
-        // Lógica de Edición
         function openEdit() {
             const d = scheduleData[currentDay];
             document.getElementById('editing-day-name').innerText = currentDay;
@@ -356,13 +371,6 @@
         document.getElementById('close-edit').onclick = () => {
             document.getElementById('edit-panel').classList.add('hidden');
             isEditMode = false;
-        };
-
-        document.getElementById('clear-config').onclick = () => {
-            if(confirm("¿Quieres eliminar la vinculación en este equipo?")) {
-                localStorage.removeItem('fb_config_secure');
-                location.reload();
-            }
         };
 
         window.setDay = (d) => { currentDay = d; render(); };
